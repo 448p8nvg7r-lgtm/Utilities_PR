@@ -1,0 +1,7 @@
+{
+  "name": "pr-utility-status",
+  "private": true,
+  "type": "module",
+  "scripts": { "collect": "node scripts/collect.mjs", "test": "node --test test/parsers.test.mjs" },
+  "engines": { "node": ">=20" }
+}
