@@ -43,7 +43,7 @@ main{padding:24px max(5vw,16px) 48px}
 .ph .dot{width:18px;height:18px;box-shadow:none;margin-inline-start:auto}
 .big{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}
 .big .num{font-size:clamp(40px,7vw,56px);font-weight:600;line-height:1}
-.big>span:not(.num){color:var(--mute)}
+.big>span:not(.num):not(.pill){color:var(--mute)}
 .pill{display:inline-block;padding:2px 10px;border-radius:99px;font-weight:600;font-size:14px;color:#fff;background:var(--unk)}
 .pill.ok{background:var(--ok)}.pill.warn{background:var(--warn)}.pill.bad{background:var(--bad)}
 .rows{display:grid;gap:7px}
@@ -88,7 +88,7 @@ footer{color:var(--mute);font-size:14px;max-width:1240px;margin:0 auto;padding:0
 </main>
 
 <footer>
-  <p>Public data only: LUMA's MiLUMA outage API (undocumented, used by its outage map), Genera PR's generation page, USGS reservoir gauges, AAA's news page, and IODA internet-outage signals from Georgia Tech. Liberty and Claro publish no outage feed, so their rows measure whether their networks are reachable on the internet — a good sign of a major outage, blind to local cable cuts. Always confirm with the utility before acting.</p>
+  <p>Public data only: LUMA's MiLUMA outage API (undocumented, used by its outage map), PREPA's generation data file (the feed behind Genera PR's live page), USGS reservoir gauges, AAA's news page, and IODA internet-outage signals from Georgia Tech. Liberty and Claro publish no outage feed, so their rows measure whether their networks are reachable on the internet — a good sign of a major outage, blind to local cable cuts. Always confirm with the utility before acting.</p>
 </footer>
 
 <script>
@@ -126,10 +126,10 @@ function renderLuma(L) {
   if (!L || !L.ok) body = fail(L, "LUMA's outage data");
   else {
     const max = Math.max(1, ...L.regions.map((r) => r.out));
-    const shed = (L.loadShedding || []).filter((x) => x.value === true || /true|on|activ/i.test(String(x.value)));
+    const shed = L.loadShedding === true;
     body = `<div class="big"><span class="num">${fmt(L.totalOut)}</span><span>customers without power${L.totalPct != null ? ` · <b class="num">${fmt(L.totalPct, 1)}%</b>` : ""}</span></div>
       ${L.plannedOut ? `<div>${fmt(L.plannedOut)} of them are planned work.</div>` : ""}
-      ${shed.length ? `<div class="err"><b>Load shedding flag is on</b> in the MiLUMA app — rotating outages (relevos de carga) may be active.</div>` : ""}
+      ${shed ? `<div class="err"><b>Load shedding flag is on</b> in the MiLUMA app — rotating outages (relevos de carga) may be active.</div>` : ""}
       <div class="rows">${L.regions.map((r) => `<div class="row"><span>${esc(r.name)}</span><span class="bar"><i style="width:${(r.out / max * 100).toFixed(1)}%"></i></span><span class="num">${fmt(r.out)}${r.pct != null ? ` <span style="color:var(--mute)">· ${fmt(r.pct, 1)}%</span>` : ""}</span></div>`).join("") || "<div>No regions reported.</div>"}</div>`;
   }
   $("p-luma").innerHTML = head("Electricity — LUMA", "Transmission & distribution outages by region", lv) + body
@@ -139,17 +139,20 @@ function renderLuma(L) {
 function renderGenera(G) {
   const lv = generaLevel(G);
   let body;
-  if (!G || !G.ok) body = fail(G, "Genera PR's generation figures");
+  if (!G || !G.ok) body = fail(G, "PREPA's generation figures");
   else {
-    const load = G.demand ?? G.generation, cap = G.available;
+    const load = G.generation ?? G.demand, cap = G.available;
     const scale = Math.max(cap || 0, load || 0) * 1.08 || 1;
     body = `<div class="big"><span class="num">${fmt(G.reserve)} MW</span><span>reserve</span> ${G.category ? `<span class="pill ${GCAT[G.category][0]}">${esc(GCAT[G.category][1])}</span>` : ""}</div>
       ${cap && load ? `<div><div class="meter" role="img" aria-label="Load ${fmt(load)} MW of ${fmt(cap)} MW available"><i style="width:${(load / scale * 100).toFixed(1)}%"></i><b style="left:${(cap / scale * 100).toFixed(1)}%"></b></div>
       <div style="display:flex;justify-content:space-between;font-size:14px;color:var(--mute);margin-top:4px"><span>Load ${fmt(load)} MW</span><span>Available ${fmt(cap)} MW ▏</span></div></div>` : ""}
-      <dl class="kv">${[["Total generation", G.generation], ["Available capacity", G.available], ["Demand", G.demand], ["Spinning reserve", G.spinning], ["Operating reserve", G.operating]].filter(([, v]) => v != null).map(([k, v]) => `<div><dt>${k}</dt><dd class="num">${fmt(v)} MW</dd></div>`).join("")}</dl>`;
+      <dl class="kv">${[["Generating now", G.generation], ["Available capacity", G.available], ["Next-hour demand", G.demand], ["Spinning reserve", G.spinning], ["Today's peak", G.peakToday], ["Year's peak", G.peakYear]].filter(([, v]) => v != null).map(([k, v]) => `<div><dt>${k}</dt><dd class="num">${fmt(v)} MW</dd></div>`).join("")}</dl>
+      ${G.fuel && G.fuel.length ? `<div style="font-size:15px"><b>Fuel mix now:</b> ${G.fuel.map((f) => `${esc(f.fuel === "Renew" ? "Renewables" : f.fuel)} ${fmt(f.pct)}%`).join(" · ")}</div>` : ""}
+      ${G.plants && G.plants.length ? `<details><summary style="cursor:pointer;min-height:32px">Output by plant (${G.plants.length} running)</summary><div class="rows" style="margin-top:8px">${G.plants.map((p) => `<div class="row"><span>${esc(p.name)}</span><span class="bar"><i style="width:${(p.mw / G.plants[0].mw * 100).toFixed(1)}%"></i></span><span class="num">${fmt(p.mw)} MW</span></div>`).join("")}</div></details>` : ""}
+      ${G.updated ? `<div style="font-size:13px;color:var(--mute)">PREPA timestamp: ${esc(G.updated)}</div>` : ""}`;
   }
-  $("p-genera").innerHTML = head("Generation — PREPA plants (Genera PR)", "Can the power plants cover tonight's demand?", lv) + body
-    + srcLine(G, [["Genera PR live data", "https://genera-pr.com/data-generacion"]]);
+  $("p-genera").innerHTML = head("Generation — PREPA / Genera PR", "All plants on the grid, incl. AES & EcoEléctrica", lv) + body
+    + srcLine(G, [["Genera PR live data", "https://genera-pr.com/data-generacion"], ["PREPA data file", "https://operationdata.prepa.pr.gov/dataSourceGenera.js"]]);
 }
 
 function renderWater(W) {
@@ -159,8 +162,8 @@ function renderWater(W) {
   else {
     const rs = W.reservoirs.filter((r) => r.ok);
     const arrow = (d) => d == null ? "—" : `<span class="${d < 0 ? "down" : d > 0 ? "up" : ""}">${d > 0 ? "▲" : d < 0 ? "▼" : "•"} ${fmt(Math.abs(d), 2)}</span>`;
-    body = `<div style="font-size:15px">Reservoir surface level, feet above sea-level datum. Falling levels are what drive AAA rationing.</div>
-      ${rs.length ? `<table><thead><tr><th>Reservoir</th><th class="r">Level</th><th class="r">24 h</th><th class="r">7 days</th><th class="hide-s"></th></tr></thead><tbody>
+    body = `<div style="font-size:15px">Reservoir level in meters above sea level, the unit AAA uses. Falling levels are what drive AAA rationing.</div>
+      ${rs.length ? `<table><thead><tr><th>Reservoir</th><th class="r">Level (m)</th><th class="r">24 h</th><th class="r">7 days</th><th class="hide-s"></th></tr></thead><tbody>
       ${rs.map((r) => `<tr><td>${esc(r.name)}<br><small style="color:var(--mute)">${esc(r.serves)}</small></td><td class="r num">${fmt(r.level, 2)}</td><td class="r num">${arrow(r.change24h)}</td><td class="r num">${arrow(r.change7d)}</td><td class="hide-s" style="color:var(--accent)">${spark(r.spark)}</td></tr>`).join("")}</tbody></table>` : "<div>No reservoir gauges reported.</div>"}
       ${W.notices && W.notices.length ? `<div><b>Latest AAA notices</b><ul class="notes">${W.notices.slice(0, 5).map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>` : ""}`;
   }
