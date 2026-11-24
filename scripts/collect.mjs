@@ -136,31 +136,28 @@ async function luma() {
     const cfg = await get(`${base}/miluma-app-config-api/v2/configs`, {
       headers: { origin: "https://miluma.lumapr.com", referer: "https://miluma.lumapr.com/" },
     });
-    const hits = findKeyDeep(cfg, /load.?shed/i).slice(0, 4);
-    if (hits.length) out.loadShedding = hits.map((h) => ({ path: h.path, value: typeof h.value === "object" ? JSON.stringify(h.value).slice(0, 200) : h.value }));
+    const flag = findKeyDeep(cfg, /load.?shed/i).map((h) => h.value).find((v) => v && typeof v === "object" && /LoadShed\.Enable$/i.test(v.key || ""));
+    if (flag) out.loadShedding = String(flag.value).toLowerCase() === "true";
   } catch { /* optional */ }
   return out;
 }
 
-// ---------- Genera PR (PREPA generation fleet) ----------
-export function parseGenera(html) {
-  const text = html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ");
-  const grab = (rx) => { const m = text.match(rx) || html.match(rx); return m ? num(m[1]) : undefined; };
-  const N = "([0-9]{1,2},?[0-9]{3}|[0-9]{1,4})";
+// ---------- Genera PR / PREPA generation fleet ----------
+// genera-pr.com/data-generacion draws its numbers from PREPA's operations data file.
+const PREPA_DATA = "https://operationdata.prepa.pr.gov/dataSourceGenera.js";
+export function parseGenera(js) {
+  const metric = (i) => { const m = js.match(new RegExp(`Index:\\s*'${i}'[^}]*?value:\\s*([0-9.]+)`)); return m ? num(m[1]) : undefined; };
   const v = {
-    generation: grab(new RegExp(`generaci[oó]n total[^0-9]{0,60}${N}`, "i")),
-    available: grab(new RegExp(`capacidad disponible[^0-9]{0,60}${N}`, "i")),
-    spinning: grab(new RegExp(`reserva (?:en )?rotaci[oó]n[^0-9]{0,60}${N}`, "i")),
-    operating: grab(new RegExp(`reserva operacional[^0-9]{0,60}${N}`, "i")),
-    demand: grab(new RegExp(`demanda[^0-9]{0,60}${N}`, "i")),
+    generation: metric(0), spinning: metric(5), operating: metric(6), available: metric(7),
+    demand: metric(8), peakToday: metric(9), peakMonth: metric(10), peakYear: metric(11),
   };
-  if (Object.values(v).every((x) => x === undefined)) {
-    throw new Error("Genera page loaded but its figures are drawn by script; open the link for live numbers");
-  }
-  const load = v.demand ?? v.generation;
-  if (v.operating === undefined && v.available !== undefined && load !== undefined) v.reserve = v.available - load;
-  else v.reserve = v.operating;
+  if (v.generation === undefined && v.available === undefined) throw new Error("PREPA data file had no recognisable generation figures");
+  const upd = js.match(/dataFechaAcualizado\s*=\s*'([^']+)'/);
+  v.updated = upd ? upd[1] : undefined;
+  v.fuel = [...js.matchAll(/\{fuel:\s*'([^']+)',\s*value:\s*([0-9.]+)\}/g)].map((m) => ({ fuel: m[1], pct: num(m[2]) }));
+  v.plants = [...js.matchAll(/Type:\s*'([^']*)',\s*Desc:\s*'([^']*)',\s*SiteTotal:\s*([0-9.]+)/g)]
+    .map((m) => ({ type: m[1], name: m[2], mw: num(m[3]) })).filter((p) => p.mw > 0).sort((a, b) => b.mw - a.mw);
+  v.reserve = v.operating ?? (v.available !== undefined && v.generation !== undefined ? v.available - v.generation : undefined);
   v.category = reserveCategory(v.reserve);
   return v;
 }
@@ -176,8 +173,8 @@ export function reserveCategory(mw) {
 }
 
 async function genera() {
-  const html = await get("https://genera-pr.com/data-generacion", { type: "text" });
-  return parseGenera(html);
+  const js = await get(PREPA_DATA, { type: "text", headers: { referer: "https://genera-pr.com/data-generacion" } });
+  return parseGenera(js);
 }
 
 // ---------- PRASA / AAA: reservoir levels from USGS + latest AAA notices ----------
@@ -191,7 +188,7 @@ export const RESERVOIRS = [
   { id: "50093045", name: "Patillas", serves: "Southeast" },
   { id: "50026140", name: "Caonillas", serves: "Arecibo / Utuado" },
 ];
-const ELEV_CODES = ["62614", "62615", "62616", "00062", "00065"];
+const ELEV_CODES = ["72376", "72380", "72375", "72379"]; // m LMSL, m PRVD02, ft LMSL, ft PRVD02
 
 export function normalizeUsgsIv(json) {
   const series = json?.value?.timeSeries || [];
@@ -205,7 +202,7 @@ export function normalizeUsgsIv(json) {
     if (!site || !pts.length) continue;
     const rank = ELEV_CODES.indexOf(code);
     if (bySite[site] && bySite[site].rank <= rank) continue;
-    bySite[site] = { rank, code, unit: ts?.variable?.unit?.unitCode || "ft", pts };
+    bySite[site] = { rank, code, unit: ts?.variable?.unit?.unitCode || "m", pts };
   }
   return RESERVOIRS.map((r) => {
     const s = bySite[r.id];
@@ -222,7 +219,7 @@ export function normalizeUsgsIv(json) {
 }
 
 async function usgsLegacy() {
-  const url = `https://waterservices.usgs.gov/nwis/iv/?format=json&siteStatus=all&period=P7D&sites=${RESERVOIRS.map((r) => r.id).join(",")}&parameterCd=${ELEV_CODES.join(",")}`;
+  const url = `https://waterservices.usgs.gov/nwis/iv/?format=json&siteStatus=all&period=P7D&sites=${RESERVOIRS.map((r) => r.id).join(",")}&parameterCd=${ELEV_CODES.slice(0, 2).join(",")}`;
   return normalizeUsgsIv(await get(url, { timeout: 45000 }));
 }
 
@@ -235,7 +232,7 @@ async function usgsOgc() {
       const f = (j.features || []).map((x) => x.properties || {})
         .filter((p) => ELEV_CODES.includes(String(p.parameter_code)))
         .sort((a, b) => ELEV_CODES.indexOf(String(a.parameter_code)) - ELEV_CODES.indexOf(String(b.parameter_code)))[0];
-      out.push(f ? { ...r, ok: true, level: num(f.value), unit: f.unit_of_measure || "ft", time: f.time, spark: [] } : { ...r, ok: false });
+      out.push(f ? { ...r, ok: true, level: num(f.value), unit: f.unit_of_measure || "m", time: f.time, spark: [] } : { ...r, ok: false });
     } catch { out.push({ ...r, ok: false }); }
   }
   return out;
@@ -247,7 +244,7 @@ export function parseAaaNews(html) {
   let m;
   while ((m = rx.exec(html)) && items.length < 8) {
     const t = m[1].replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").replace(/&#x27;|&#39;/g, "'").replace(/\s+/g, " ").trim();
-    if (t.length > 25 && /AAA|ACUEDUCTOS|AGUA|SERVICIO|PLANTA|AVER|INTERRUP|TRABAJOS|ABONADOS|REPAR|EMBALSE|ZONA/i.test(t) && !items.includes(t)) items.push(t);
+    if (t.length > 25 && t === t.toUpperCase() && /AAA|ACUEDUCTOS|AGUA|SERVICIO|PLANTA|AVER|INTERRUP|TRABAJOS|ABONADOS|REPAR|EMBALSE|ZONA/i.test(t) && !items.includes(t)) items.push(t);
   }
   return items;
 }
@@ -270,6 +267,7 @@ export const NETWORKS = [
   { key: "pr", label: "All of Puerto Rico", type: "country", code: "PR" },
 ];
 const IODA = "https://api.ioda.inetintel.cc.gatech.edu/v2";
+const USE_DS = ["bgp", "ping-slash24"];
 
 export function median(a) { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : undefined; }
 
@@ -290,11 +288,11 @@ export function normalizeIoda(alertsJson, signalsJson, nowSec) {
   // latest alert per datasource; a 'critical' that hasn't returned to 'normal' within 3h = active
   const latestBy = {};
   for (const a of alerts.sort((x, y) => x.time - y.time)) latestBy[a.ds] = a;
-  const active = Object.values(latestBy).filter((a) => a.level === "critical" && nowSec - a.time < 3 * 3600);
+  const active = Object.values(latestBy).filter((a) => USE_DS.includes(a.ds) && a.level === "critical" && nowSec - a.time < 3 * 3600);
 
   const flat = (signalsJson?.data || []).flat(2).filter((s) => s && s.values);
   const signals = {};
-  for (const s of flat) { const h = signalHealth(s.values); if (h) signals[s.datasource] = h; }
+  for (const s of flat) { if (!USE_DS.includes(s.datasource)) continue; const h = signalHealth(s.values); if (h && h.baseline >= 20) signals[s.datasource] = h; }
   const ratios = Object.values(signals).map((s) => s.ratio);
   const worst = ratios.length ? Math.min(...ratios) : undefined;
 
