@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PR Utility Status</title>
+<meta name="theme-color" content="#0b3d5c">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calm control-room, numbers first, no drama.
+   IDEA: a utility service panel — each utility is a breaker row with an indicator lamp.
+   PICTURE: four lamped panels with the live figure large, then a 7-day outage trace.
+   COLOUR: harbour blue band, white panels, lamps in green / amber / flag red.
+   TYPE: Barlow Condensed for meter figures, Barlow for text. LAYOUT: band, 2x2 panels, trace, notes. */
+:root{color-scheme:light dark;
+ --bg:light-dark(#eef2f5,#0b141b);--panel:light-dark(#fff,#121e27);--ink:light-dark(#0e1a22,#e7eef3);--mute:light-dark(#5a6b77,#93a4b0);
+ --line:light-dark(#d9e1e7,#22323e);--band:#0b3d5c;--bandink:#fff;--accent:light-dark(#0067a5,#5cb8f0);
+ --ok:#1f8a4c;--warn:#c7851a;--bad:#d1202f;--unk:#8a97a1}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif;overflow-x:clip}
+a{color:var(--accent)}
+.num{font-family:"Barlow Condensed",Barlow,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+header{background:var(--band);color:var(--bandink);padding:clamp(20px,4vw,40px) max(5vw,16px) 28px}
+header .wrap,main{max-width:1240px;margin:0 auto}
+h1{font:600 clamp(30px,5vw,48px)/1.05 "Barlow Condensed",sans-serif;margin:0 0 10px;text-wrap:balance}
+.sub{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;color:#cfe3f1;font-size:15px}
+.lamps{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border-radius:99px;padding:6px 14px 6px 10px;font-weight:500;font-size:15px}
+.dot{width:12px;height:12px;border-radius:50%;flex:none;background:var(--unk);box-shadow:0 0 0 3px rgba(255,255,255,.15)}
+.ok .dot,.dot.ok{background:var(--ok)}.warn .dot,.dot.warn{background:var(--warn)}.bad .dot,.dot.bad{background:var(--bad)}
+.bad .dot{animation:pulse 1.6s infinite}@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(209,32,47,.25)}}
+@media(prefers-reduced-motion:reduce){.bad .dot{animation:none}}
+button{font:600 15px Barlow,sans-serif;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid rgba(255,255,255,.35);background:transparent;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid #7cc4f5;outline-offset:2px}
+.stale{background:#7a4a00;color:#fff;padding:8px 14px;border-radius:8px;font-size:15px;margin-top:14px}
+main{padding:24px max(5vw,16px) 48px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:18px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 20px 16px;display:flex;flex-direction:column;gap:14px}
+.ph{display:flex;align-items:center;gap:12px}
+.ph h2{margin:0;font:600 22px/1.1 "Barlow Condensed",sans-serif}.ph small{display:block;color:var(--mute);font:500 14px Barlow,system-ui,sans-serif}
+.ph .dot{width:18px;height:18px;box-shadow:none;margin-inline-start:auto}
+.big{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}
+.big .num{font-size:clamp(40px,7vw,56px);font-weight:600;line-height:1}
+.big>span:not(.num){color:var(--mute)}
+.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-weight:600;font-size:14px;color:#fff;background:var(--unk)}
+.pill.ok{background:var(--ok)}.pill.warn{background:var(--warn)}.pill.bad{background:var(--bad)}
+.rows{display:grid;gap:7px}
+.row{display:grid;grid-template-columns:8.5em minmax(0,1fr) auto;gap:10px;align-items:center;font-size:15px}
+.bar{height:10px;background:var(--line);border-radius:5px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.meter{position:relative;height:22px;background:var(--line);border-radius:6px;overflow:hidden}
+.meter i{position:absolute;inset:0 auto 0 0;background:var(--accent)}.meter b{position:absolute;top:-3px;bottom:-3px;width:3px;background:var(--ink)}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.kv div{border-top:1px solid var(--line);padding-top:6px}.kv dt{color:var(--mute);font-size:13px}.kv dd{margin:0;font-size:22px}
+table{width:100%;border-collapse:collapse;font-size:15px}th{text-align:start;color:var(--mute);font-weight:500;font-size:13px}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line)}td.r,th.r{text-align:end}
+.up{color:var(--ok)}.down{color:var(--bad)}
+svg.spark{width:84px;height:24px;display:block}
+.notes{margin:0;padding-inline-start:18px;font-size:14px}.notes li{margin-bottom:4px}
+.src{margin-top:auto;border-top:1px solid var(--line);padding-top:10px;color:var(--mute);font-size:13px;display:flex;flex-wrap:wrap;gap:4px 14px}
+.err{background:light-dark(#fdf3e6,#2b2110);border-radius:8px;padding:10px 12px;font-size:15px}
+.fig{position:relative;min-height:240px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.wide{margin-top:18px}
+footer{color:var(--mute);font-size:14px;max-width:1240px;margin:0 auto;padding:0 max(5vw,16px) 40px}
+@media(max-width:600px){.row{grid-template-columns:6.5em minmax(0,1fr) auto}.panel{padding:16px}table{font-size:14px}.hide-s{display:none}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1 id="title">Loading Puerto Rico utility status…</h1>
+  <div class="sub"><span id="updated">Waiting for data</span><button id="refresh" type="button">Refresh</button></div>
+  <div class="lamps" id="lamps"></div>
+  <div id="stale"></div>
+</div></header>
+
+<main>
+  <div class="grid">
+    <section class="panel" id="p-luma"></section>
+    <section class="panel" id="p-genera"></section>
+    <section class="panel" id="p-water"></section>
+    <section class="panel" id="p-tel"></section>
+  </div>
+  <section class="panel wide">
+    <div class="ph"><div><h2>Customers without power, last 7 days</h2><small>LUMA outage map, sampled every ~10 minutes by this app</small></div></div>
+    <div class="fig"><svg id="hist" role="img" aria-label="Customers without power over time"></svg></div>
+  </section>
+</main>
+
+<footer>
+  <p>Public data only: LUMA's MiLUMA outage API (undocumented, used by its outage map), Genera PR's generation page, USGS reservoir gauges, AAA's news page, and IODA internet-outage signals from Georgia Tech. Liberty and Claro publish no outage feed, so their rows measure whether their networks are reachable on the internet — a good sign of a major outage, blind to local cable cuts. Always confirm with the utility before acting.</p>
+</footer>
+
+<script>
+{
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = (n, d = 0) => n == null || !isFinite(n) ? "—" : Number(n).toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
+const ago = (iso) => { const m = Math.round((Date.now() - Date.parse(iso)) / 60000); if (!isFinite(m)) return "unknown"; if (m < 1) return "just now"; if (m < 60) return m + " min ago"; const h = Math.round(m / 60); return h < 48 ? h + " h ago" : Math.round(h / 24) + " days ago"; };
+const LABEL = { ok: "Normal", warn: "Watch", bad: "Problem", unk: "No data" };
+let state = null, hist = [];
+
+function spark(vals, w = 84, h = 24) {
+  const v = (vals || []).filter((x) => x != null && isFinite(x));
+  if (v.length < 2) return "";
+  const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1;
+  const pts = v.map((x, i) => `${(i / (v.length - 1) * (w - 2) + 1).toFixed(1)},${(h - 2 - (x - lo) / r * (h - 4)).toFixed(1)}`).join(" ");
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`;
+}
+const srcLine = (s, links) => `<div class="src"><span>${s && s.fetchedAt ? "Checked " + esc(ago(s.fetchedAt)) : ""}</span>${links.map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join("")}</div>`;
+const head = (title, sub, cls) => `<div class="ph"><div><h2>${esc(title)}</h2><small>${esc(sub)}</small></div><span class="dot ${cls}" title="${LABEL[cls]}"></span></div>`;
+const fail = (s, what) => `<div class="err">Couldn't read ${esc(what)} on the last check${s && s.error ? ": " + esc(s.error) : ""}. Use the official link below.</div>`;
+
+// ---- status rules ----
+function lumaLevel(L) { if (!L || !L.ok) return "unk"; const p = L.totalPct; if (p == null) return L.totalOut > 50000 ? "bad" : L.totalOut > 10000 ? "warn" : "ok"; return p >= 5 ? "bad" : p >= 1 ? "warn" : "ok"; }
+const GCAT = { deficit: ["bad", "Deficit — load shedding likely"], limited: ["bad", "Limited (under 100 MW)"], narrow: ["warn", "Narrow (100–400 MW)"], moderate: ["ok", "Moderate (400–600 MW)"], sufficient: ["ok", "Sufficient (600+ MW)"] };
+function generaLevel(G) { return G && G.ok && GCAT[G.category] ? GCAT[G.category][0] : "unk"; }
+function waterLevel(W) { if (!W || !W.ok) return "unk"; const r = (W.reservoirs || []).filter((x) => x.ok && x.change7d != null); if (!r.length) return "unk"; const falling = r.filter((x) => x.change7d < -0.5).length; return falling / r.length > 0.5 ? "warn" : "ok"; }
+const NETL = { ok: "ok", degraded: "warn", down: "bad", unknown: "unk" };
+function telLevel(T) { if (!T || !T.ok) return "unk"; const ls = T.networks.filter((n) => n.ok && n.key !== "pr").map((n) => NETL[n.status] || "unk"); return ls.includes("bad") ? "bad" : ls.includes("warn") ? "warn" : ls.includes("ok") ? "ok" : "unk"; }
+
+// ---- panels ----
+function renderLuma(L) {
+  const lv = lumaLevel(L);
+  let body;
+  if (!L || !L.ok) body = fail(L, "LUMA's outage data");
+  else {
+    const max = Math.max(1, ...L.regions.map((r) => r.out));
+    const shed = (L.loadShedding || []).filter((x) => x.value === true || /true|on|activ/i.test(String(x.value)));
+    body = `<div class="big"><span class="num">${fmt(L.totalOut)}</span><span>customers without power${L.totalPct != null ? ` · <b class="num">${fmt(L.totalPct, 1)}%</b>` : ""}</span></div>
+      ${L.plannedOut ? `<div>${fmt(L.plannedOut)} of them are planned work.</div>` : ""}
+      ${shed.length ? `<div class="err"><b>Load shedding flag is on</b> in the MiLUMA app — rotating outages (relevos de carga) may be active.</div>` : ""}
+      <div class="rows">${L.regions.map((r) => `<div class="row"><span>${esc(r.name)}</span><span class="bar"><i style="width:${(r.out / max * 100).toFixed(1)}%"></i></span><span class="num">${fmt(r.out)}${r.pct != null ? ` <span style="color:var(--mute)">· ${fmt(r.pct, 1)}%</span>` : ""}</span></div>`).join("") || "<div>No regions reported.</div>"}</div>`;
+  }
+  $("p-luma").innerHTML = head("Electricity — LUMA", "Transmission & distribution outages by region", lv) + body
+    + srcLine(L, [["LUMA outage map", "https://miluma.lumapr.com/"], ["lumapr.com", "https://lumapr.com/"]]);
+}
+
+function renderGenera(G) {
+  const lv = generaLevel(G);
+  let body;
+  if (!G || !G.ok) body = fail(G, "Genera PR's generation figures");
+  else {
+    const load = G.demand ?? G.generation, cap = G.available;
+    const scale = Math.max(cap || 0, load || 0) * 1.08 || 1;
+    body = `<div class="big"><span class="num">${fmt(G.reserve)} MW</span><span>reserve</span> ${G.category ? `<span class="pill ${GCAT[G.category][0]}">${esc(GCAT[G.category][1])}</span>` : ""}</div>
+      ${cap && load ? `<div><div class="meter" role="img" aria-label="Load ${fmt(load)} MW of ${fmt(cap)} MW available"><i style="width:${(load / scale * 100).toFixed(1)}%"></i><b style="left:${(cap / scale * 100).toFixed(1)}%"></b></div>
+      <div style="display:flex;justify-content:space-between;font-size:14px;color:var(--mute);margin-top:4px"><span>Load ${fmt(load)} MW</span><span>Available ${fmt(cap)} MW ▏</span></div></div>` : ""}
+      <dl class="kv">${[["Total generation", G.generation], ["Available capacity", G.available], ["Demand", G.demand], ["Spinning reserve", G.spinning], ["Operating reserve", G.operating]].filter(([, v]) => v != null).map(([k, v]) => `<div><dt>${k}</dt><dd class="num">${fmt(v)} MW</dd></div>`).join("")}</dl>`;
+  }
+  $("p-genera").innerHTML = head("Generation — PREPA plants (Genera PR)", "Can the power plants cover tonight's demand?", lv) + body
+    + srcLine(G, [["Genera PR live data", "https://genera-pr.com/data-generacion"]]);
+}
+
+function renderWater(W) {
+  const lv = waterLevel(W);
+  let body;
+  if (!W || !W.ok) body = fail(W, "reservoir levels and AAA notices");
+  else {
+    const rs = W.reservoirs.filter((r) => r.ok);
+    const arrow = (d) => d == null ? "—" : `<span class="${d < 0 ? "down" : d > 0 ? "up" : ""}">${d > 0 ? "▲" : d < 0 ? "▼" : "•"} ${fmt(Math.abs(d), 2)}</span>`;
+    body = `<div style="font-size:15px">Reservoir surface level, feet above sea-level datum. Falling levels are what drive AAA rationing.</div>
+      ${rs.length ? `<table><thead><tr><th>Reservoir</th><th class="r">Level</th><th class="r">24 h</th><th class="r">7 days</th><th class="hide-s"></th></tr></thead><tbody>
+      ${rs.map((r) => `<tr><td>${esc(r.name)}<br><small style="color:var(--mute)">${esc(r.serves)}</small></td><td class="r num">${fmt(r.level, 2)}</td><td class="r num">${arrow(r.change24h)}</td><td class="r num">${arrow(r.change7d)}</td><td class="hide-s" style="color:var(--accent)">${spark(r.spark)}</td></tr>`).join("")}</tbody></table>` : "<div>No reservoir gauges reported.</div>"}
+      ${W.notices && W.notices.length ? `<div><b>Latest AAA notices</b><ul class="notes">${W.notices.slice(0, 5).map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>` : ""}`;
+  }
+  $("p-water").innerHTML = head("Water — PRASA / AAA", "Reservoirs and service notices", lv) + body
+    + srcLine(W, [["Your zone & rationing (MiZona)", "https://mizona.acueductospr.com/"], ["AAA news", "https://www.acueductos.pr.gov/"], ["USGS reservoirs", "https://pr.water.usgs.gov/drought/hydro_conditions_selected_sites.html"]]);
+}
+
+function renderTel(T) {
+  const lv = telLevel(T);
+  let body;
+  if (!T || !T.ok) body = fail(T, "internet outage signals");
+  else {
+    const DS = { bgp: "Routing", "ping-slash24": "Reachability", "merit-nt": "Telescope", gtr: "Google traffic" };
+    body = `<div style="font-size:15px">Share of each network still visible on the internet versus its own last-24-hour baseline.</div>
+      <table><thead><tr><th>Network</th><th class="r">Visible</th><th class="hide-s">Trend</th><th class="r">Status</th></tr></thead><tbody>
+      ${T.networks.map((n) => {
+        const cls = n.ok ? NETL[n.status] || "unk" : "unk";
+        const main = n.signals && (n.signals["ping-slash24"] || n.signals.bgp || Object.values(n.signals)[0]);
+        const alerts = (n.activeAlerts || []).map((a) => DS[a.ds] || a.ds).join(", ");
+        return `<tr><td>${esc(n.label)}<br><small style="color:var(--mute)">${n.type === "asn" ? "AS" + esc(n.code) : "Island-wide"}${alerts ? " · alert: " + esc(alerts) : ""}</small></td>
+          <td class="r num">${n.worstRatio != null ? fmt(Math.min(n.worstRatio, 1) * 100) + "%" : "—"}</td>
+          <td class="hide-s" style="color:var(--accent)">${main ? spark(main.spark) : ""}</td>
+          <td class="r"><span class="pill ${cls}">${n.ok ? esc({ ok: "Normal", degraded: "Degraded", down: "Outage", unknown: "No data" }[n.status] || "No data") : "No data"}</span></td></tr>`;
+      }).join("")}</tbody></table>`;
+  }
+  $("p-tel").innerHTML = head("Telecom — Liberty & Claro", "Internet connectivity (IODA, Georgia Tech)", lv) + body
+    + srcLine(T, [["IODA: Liberty", "https://ioda.inetintel.cc.gatech.edu/asn/14638"], ["IODA: Claro", "https://ioda.inetintel.cc.gatech.edu/asn/10396"], ["IODA: Puerto Rico", "https://ioda.inetintel.cc.gatech.edu/country/PR"]]);
+}
+
+function renderHeader(S) {
+  const L = S.luma, items = [["Power", lumaLevel(L)], ["Generation", generaLevel(S.genera)], ["Water", waterLevel(S.prasa)], ["Telecom", telLevel(S.telecom)]];
+  $("lamps").innerHTML = items.map(([k, c]) => `<span class="chip ${c}"><span class="dot"></span>${k}: ${LABEL[c]}</span>`).join("");
+  $("title").textContent = L && L.ok ? `${fmt(L.totalOut)} customers without power in Puerto Rico` : "Puerto Rico utility status";
+  $("updated").textContent = "Data collected " + ago(S.generatedAt) + " · " + new Date(S.generatedAt).toLocaleString("en-US", { timeZone: "America/Puerto_Rico", dateStyle: "medium", timeStyle: "short" }) + " AST";
+  const age = (Date.now() - Date.parse(S.generatedAt)) / 60000;
+  $("stale").innerHTML = age > 40 ? `<div class="stale">This data is ${esc(ago(S.generatedAt))} old — the collector may be paused. Check the official links.</div>` : "";
+}
+
+// ---- 7-day trace ----
+const svg = $("hist");
+function drawHist() {
+  const W = svg.clientWidth, H = svg.clientHeight; if (!W || !H) return;
+  const pts = hist.filter((h) => h.out != null).map((h) => ({ t: Date.parse(h.t), v: h.out }));
+  if (pts.length < 2) { svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" fill="currentColor" opacity=".6" font-size="15">The trace fills in as the collector runs.</text>`; return; }
+  const m = { l: W < 520 ? 44 : 60, r: 12, t: 12, b: 26 };
+  const t0 = pts[0].t, t1 = pts[pts.length - 1].t, vmax = Math.max(...pts.map((p) => p.v)) * 1.1 || 1;
+  const x = (t) => m.l + (t - t0) / ((t1 - t0) || 1) * (W - m.l - m.r), y = (v) => H - m.b - v / vmax * (H - m.t - m.b);
+  const ticks = [0, .5, 1].map((f) => vmax * f);
+  const days = []; for (let d = new Date(t0); d <= t1; d.setDate(d.getDate() + 1)) { const n = new Date(d); n.setHours(0, 0, 0, 0); if (n.getTime() >= t0) days.push(n.getTime()); }
+  const line = pts.map((p) => `${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
+  svg.innerHTML = `${ticks.map((v) => `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end" font-size="12" fill="var(--mute)">${v >= 1000 ? fmt(v / 1000) + "k" : fmt(v)}</text>`).join("")}
+    ${(W < 520 ? days.filter((_, i) => i % 2 === 0) : days).map((d) => `<text x="${x(d)}" y="${H - 6}" font-size="12" fill="var(--mute)" text-anchor="middle">${new Date(d).toLocaleDateString("en-US", { weekday: "short" })}</text>`).join("")}
+    <polygon points="${m.l},${y(0)} ${line} ${x(t1)},${y(0)}" fill="var(--accent)" opacity=".12"/>
+    <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
+}
+const ro = new ResizeObserver(drawHist); ro.observe(svg);
+
+async function load() {
+  $("refresh").disabled = true;
+  try {
+    const [s, h] = await Promise.all([fetch("status.json?" + Date.now()).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }), fetch("history.json?" + Date.now()).then((r) => r.ok ? r.json() : []).catch(() => [])]);
+    state = s; hist = Array.isArray(h) ? h : [];
+    renderHeader(s); renderLuma(s.luma); renderGenera(s.genera); renderWater(s.prasa); renderTel(s.telecom); drawHist();
+  } catch (e) {
+    $("title").textContent = "Waiting for the first data run";
+    $("updated").textContent = "status.json isn't there yet — run the “Collect utility status” workflow once.";
+    ["p-luma", "p-genera", "p-water", "p-tel"].forEach((id) => { if (!state) $(id).innerHTML = '<div class="err">No data yet.</div>'; });
+  } finally { $("refresh").disabled = false; }
+}
+$("refresh").addEventListener("click", load);
+load(); setInterval(load, 120000);
+}
+</script>
+</body>
+</html>
