@@ -1,33 +1,40 @@
 {
- "generatedAt": "2026-11-28T02:45:41.402Z",
+ "generatedAt": "2026-11-28T03:40:30.114Z",
  "luma": {
   "ok": true,
-  "fetchedAt": "2026-11-28T02:45:17.066Z",
-  "ms": 719,
-  "totalOut": 115,
+  "fetchedAt": "2026-11-28T03:40:05.749Z",
+  "ms": 675,
+  "totalOut": 596,
   "totalClients": 1468223,
-  "totalPct": 0.007832597636735019,
+  "totalPct": 0.040593288621687575,
   "plannedOut": 0,
   "regions": [
    {
-    "name": "Mayaguez",
-    "out": 51,
-    "total": 216605,
-    "pct": 0.023545162854043074,
+    "name": "Caguas",
+    "out": 515,
+    "total": 250514,
+    "pct": 0.20557733300334513,
     "planned": 0
    },
    {
     "name": "Arecibo",
-    "out": 41,
+    "out": 51,
     "total": 177369,
-    "pct": 0.02311565155128574,
+    "pct": 0.02875361534428226,
     "planned": 0
    },
    {
     "name": "San Juan",
-    "out": 16,
+    "out": 15,
     "total": 253068,
-    "pct": 0.006322411367695639,
+    "pct": 0.005927260657214661,
+    "planned": 0
+   },
+   {
+    "name": "Mayaguez",
+    "out": 8,
+    "total": 216605,
+    "pct": 0.0036933588790655806,
     "planned": 0
    },
    {
@@ -45,73 +52,66 @@
     "planned": 0
    },
    {
-    "name": "Caguas",
-    "out": 1,
-    "total": 250514,
-    "pct": 0.00039917928738513614,
-    "planned": 0
-   },
-   {
     "name": "Bayamon",
-    "out": 0,
+    "out": 1,
     "total": 216496,
-    "pct": 0,
+    "pct": 0.0004619022984258369,
     "planned": 0
    }
   ],
-  "reportedAt": "11/27/2026 10:45 PM",
+  "reportedAt": "11/27/2026 11:40 PM",
   "loadShedding": false
  },
  "genera": {
   "ok": true,
-  "fetchedAt": "2026-11-28T02:45:16.738Z",
-  "ms": 345,
-  "generation": 2432,
-  "spinning": 421,
-  "operating": 511,
-  "available": 2944,
-  "demand": 2362,
+  "fetchedAt": "2026-11-28T03:40:05.448Z",
+  "ms": 339,
+  "generation": 2360,
+  "spinning": 501,
+  "operating": 603,
+  "available": 2956,
+  "demand": 2150,
   "peakToday": 2581,
   "peakMonth": 2925,
   "peakYear": 3234,
-  "updated": "11/27/2026 10:44:03 PM",
+  "updated": "11/27/2026 11:38:03 PM",
   "fuel": [
    {
     "fuel": "Bunker",
-    "pct": 19
+    "pct": 20
    },
    {
     "fuel": "Diesel",
-    "pct": 27
+    "pct": 24
    },
    {
     "fuel": "LNG",
-    "pct": 35
+    "pct": 36
    },
    {
     "fuel": "Coal",
-    "pct": 19
+    "pct": 20
    },
    {
     "fuel": "Renew",
-    "pct": 0
+    "pct": 1
    }
   ],
   "plants": [
    {
     "type": "Vapor",
     "name": "Costa Sur",
-    "mw": 659
+    "mw": 650.86
    },
    {
     "type": "COGEN",
     "name": "AES",
-    "mw": 443
+    "mw": 444
    },
    {
     "type": "COGEN",
     "name": "Ecoelectrica",
-    "mw": 351
+    "mw": 353
    },
    {
     "type": "Vapor",
@@ -121,42 +121,42 @@
    {
     "type": "Ciclo Combinado",
     "name": "San Juan",
-    "mw": 281.3
+    "mw": 226.2
    },
    {
     "type": "Turbina de Gas",
     "name": "Estaciones GT",
-    "mw": 170.17
+    "mw": 170.48
    },
    {
     "type": "Turbina de Gas",
     "name": "Mayaguez",
-    "mw": 88
+    "mw": 88.2
    },
    {
     "type": "Ciclo Combinado",
     "name": "Aguirre Stag 1",
-    "mw": 60.47
+    "mw": 61.32
    },
    {
     "type": "Ciclo Combinado",
     "name": "Aguirre Stag 2",
-    "mw": 60.28
-   },
-   {
-    "type": "Turbina de Gas",
-    "name": "Cambalache",
-    "mw": 51.13
+    "mw": 60.57
    },
    {
     "type": "Turbina de Gas",
     "name": "Palo Seco",
-    "mw": 32.2
+    "mw": 32.26
+   },
+   {
+    "type": "Turbina de Gas",
+    "name": "Cambalache",
+    "mw": 25.89
    },
    {
     "type": "Renovable",
     "name": "Wind",
-    "mw": 2.5
+    "mw": 14.8
    },
    {
     "type": "Renovable",
@@ -172,40 +172,97 @@
     "type": "Hidroelectricas",
     "name": "Dos Bocas",
     "mw": 0.02
-   },
-   {
-    "type": "Hidroelectricas",
-    "name": "Yauco",
-    "mw": 0.01
    }
   ],
-  "reserve": 511,
-  "category": "moderate"
+  "reserve": 603,
+  "category": "sufficient"
  },
  "prasa": {
   "ok": true,
-  "fetchedAt": "2026-11-28T02:45:22.145Z",
-  "ms": 5751,
+  "fetchedAt": "2026-11-28T03:40:22.739Z",
+  "ms": 17629,
   "reservoirs": [
    {
     "id": "50059000",
     "name": "Carraízo (Lago Loíza)",
     "serves": "San Juan metro",
     "ok": true,
-    "level": 40.95,
+    "level": 40.947,
     "unit": "m",
-    "time": "2026-11-28T02:20:00+00:00",
-    "spark": []
+    "time": "2026-11-28T02:45:00.000Z",
+    "change24h": 0.03,
+    "change7d": 0.05,
+    "spark": [
+     40.9,
+     40.9,
+     40.9,
+     40.85,
+     40.83,
+     40.87,
+     40.85,
+     40.92,
+     40.88,
+     40.87,
+     40.94,
+     40.97,
+     40.84,
+     40.87,
+     40.91,
+     40.95,
+     40.89,
+     40.89,
+     40.88,
+     40.86,
+     40.85,
+     40.87,
+     40.89,
+     40.9,
+     40.92,
+     40.93,
+     40.94,
+     40.95
+    ]
    },
    {
     "id": "50045000",
     "name": "La Plata",
     "serves": "Metro / north",
     "ok": true,
-    "level": 43.01,
+    "level": 43.007,
     "unit": "m",
-    "time": "2026-11-28T01:45:00+00:00",
-    "spark": []
+    "time": "2026-11-28T02:45:00.000Z",
+    "change24h": -0.07,
+    "change7d": -0.02,
+    "spark": [
+     43.07,
+     43.05,
+     43.03,
+     43,
+     42.98,
+     42.96,
+     42.93,
+     42.95,
+     42.95,
+     42.98,
+     42.98,
+     42.99,
+     43,
+     43.02,
+     43.05,
+     43.06,
+     43.07,
+     43.08,
+     43.09,
+     43.09,
+     43.1,
+     43.1,
+     43.1,
+     43.09,
+     43.07,
+     43.06,
+     43.05,
+     43.03
+    ]
    },
    {
     "id": "50047550",
@@ -214,18 +271,80 @@
     "ok": true,
     "level": 401.031,
     "unit": "m",
-    "time": "2026-11-28T01:45:00+00:00",
-    "spark": []
+    "time": "2026-11-28T02:45:00.000Z",
+    "change24h": 0,
+    "change7d": 0.09,
+    "spark": [
+     400.94,
+     400.94,
+     400.95,
+     400.96,
+     400.97,
+     400.98,
+     400.98,
+     401.01,
+     401.01,
+     401.01,
+     401.02,
+     401.02,
+     401.02,
+     401.02,
+     401.03,
+     401.03,
+     401.03,
+     401.03,
+     401.04,
+     401.03,
+     401.03,
+     401.04,
+     401.04,
+     401.03,
+     401.03,
+     401.04,
+     401.04,
+     401.03
+    ]
    },
    {
     "id": "50010800",
     "name": "Guajataca",
     "serves": "Northwest",
     "ok": true,
-    "level": 196.261,
+    "level": 196.258,
     "unit": "m",
-    "time": "2026-11-28T01:45:00+00:00",
-    "spark": []
+    "time": "2026-11-28T02:45:00.000Z",
+    "change24h": -0.01,
+    "change7d": 0.28,
+    "spark": [
+     195.97,
+     195.97,
+     195.98,
+     196.19,
+     196.26,
+     196.29,
+     196.31,
+     196.32,
+     196.29,
+     196.26,
+     196.24,
+     196.25,
+     196.26,
+     196.27,
+     196.28,
+     196.28,
+     196.28,
+     196.28,
+     196.28,
+     196.28,
+     196.28,
+     196.28,
+     196.28,
+     196.28,
+     196.27,
+     196.27,
+     196.27,
+     196.27
+    ]
    },
    {
     "id": "50111210",
@@ -234,41 +353,165 @@
     "ok": true,
     "level": 148.52,
     "unit": "m",
-    "time": "2026-11-28T02:15:00+00:00",
-    "spark": []
+    "time": "2026-11-28T03:15:00.000Z",
+    "change24h": -0.01,
+    "change7d": 0.14,
+    "spark": [
+     148.38,
+     148.38,
+     148.38,
+     148.48,
+     148.48,
+     148.48,
+     148.48,
+     148.48,
+     148.48,
+     148.48,
+     148.48,
+     148.52,
+     148.53,
+     148.53,
+     148.54,
+     148.54,
+     148.54,
+     148.54,
+     148.54,
+     148.54,
+     148.53,
+     148.53,
+     148.53,
+     148.53,
+     148.53,
+     148.53,
+     148.53,
+     148.52
+    ]
    },
    {
     "id": "50113950",
     "name": "Cerrillos",
     "serves": "Ponce",
     "ok": true,
-    "level": 166.479,
+    "level": 166.473,
     "unit": "m",
-    "time": "2026-11-28T02:25:00+00:00",
-    "spark": []
+    "time": "2026-11-28T02:45:00.000Z",
+    "change24h": -0.03,
+    "change7d": 0.17,
+    "spark": [
+     166.32,
+     166.31,
+     166.32,
+     166.49,
+     166.55,
+     166.57,
+     166.58,
+     166.58,
+     166.58,
+     166.58,
+     166.57,
+     166.57,
+     166.57,
+     166.57,
+     166.57,
+     166.56,
+     166.56,
+     166.56,
+     166.55,
+     166.54,
+     166.53,
+     166.53,
+     166.52,
+     166.51,
+     166.51,
+     166.49,
+     166.49,
+     166.48
+    ]
    },
    {
     "id": "50093045",
     "name": "Patillas",
     "serves": "Southeast",
     "ok": true,
-    "level": 63.694,
+    "level": 63.673,
     "unit": "m",
-    "time": "2026-11-28T01:45:00+00:00",
-    "spark": []
+    "time": "2026-11-28T02:45:00.000Z",
+    "change24h": -0.33,
+    "change7d": -0.6,
+    "spark": [
+     64.32,
+     64.29,
+     64.27,
+     64.25,
+     64.32,
+     64.36,
+     64.4,
+     64.88,
+     64.98,
+     65.02,
+     65.01,
+     64.96,
+     64.93,
+     64.88,
+     64.8,
+     64.77,
+     64.7,
+     64.61,
+     64.51,
+     64.42,
+     64.33,
+     64.23,
+     64.13,
+     64.07,
+     64,
+     63.92,
+     63.84,
+     63.76
+    ]
    },
    {
     "id": "50026140",
     "name": "Caonillas",
     "serves": "Arecibo / Utuado",
     "ok": true,
-    "level": 251.789,
+    "level": 251.792,
     "unit": "m",
-    "time": "2026-11-28T01:45:00+00:00",
-    "spark": []
+    "time": "2026-11-28T02:45:00.000Z",
+    "change24h": 0,
+    "change7d": -0.01,
+    "spark": [
+     251.8,
+     251.8,
+     251.8,
+     251.81,
+     251.81,
+     251.82,
+     251.82,
+     251.83,
+     251.82,
+     251.82,
+     251.81,
+     251.81,
+     251.82,
+     251.82,
+     251.81,
+     251.81,
+     251.81,
+     251.81,
+     251.81,
+     251.8,
+     251.8,
+     251.8,
+     251.8,
+     251.8,
+     251.79,
+     251.79,
+     251.79,
+     251.79
+    ]
    }
   ],
-  "via": "USGS Water Data API (latest values)",
+  "via": "USGS Water Services (instantaneous values)",
   "notices": [
    "AAA ANUNCIA TRABAJOS DE MEJORAS EN LA ESTACIÓN DE BOMBAS PALMAS 1 EN GUAYAMA",
    "AAA ENVIARÁ NOTIFICACIONES A SUS ABONADOS POR WHATSAPP Y CORREO ELECTRÓNICO",
@@ -277,7 +520,7 @@
  },
  "telecom": {
   "ok": false,
-  "fetchedAt": "2026-11-28T02:45:41.402Z",
+  "fetchedAt": "2026-11-28T03:40:30.114Z",
   "error": "IODA API unreachable"
  }
 }
